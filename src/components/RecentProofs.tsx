@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { type Proof } from "@/lib/definitions";
 import {
@@ -11,48 +12,76 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Pencil, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ProofForm } from "./ProofForm";
+import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
 
 const fetchRecentProofs = async (): Promise<Proof[]> => {
   const { data, error } = await supabase
     .from("proofs")
     .select("*, competitors(name)")
     .order("created_at", { ascending: false })
-    .limit(5);
+    .limit(10);
 
-  if (error) {
-    console.error("Error fetching recent proofs:", error);
-    throw new Error("Não foi possível carregar as provas recentes.");
-  }
-
+  if (error) throw new Error("Não foi possível carregar as provas recentes.");
   return data as Proof[];
 };
 
 export const RecentProofs = () => {
-  const {
-    data: proofs,
-    isLoading,
-    isError,
-    error,
-  } = useQuery<Proof[]>({
+  const [proofToDelete, setProofToDelete] = useState<Proof | null>(null);
+  const [proofToEdit, setProofToEdit] = useState<Proof | null>(null);
+  const queryClient = useQueryClient();
+
+  const { data: proofs, isLoading, isError, error } = useQuery<Proof[]>({
     queryKey: ["recentProofs"],
     queryFn: fetchRecentProofs,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (proof: Proof) => {
+      if (proof.photo_url) {
+        const photoPath = proof.photo_url.split("/").pop();
+        if (photoPath) {
+          const { error: storageError } = await supabase.storage.from("proof_photos").remove([photoPath]);
+          if (storageError) console.error("Erro ao apagar foto:", storageError.message);
+        }
+      }
+      const { error: dbError } = await supabase.from("proofs").delete().eq("id", proof.id);
+      if (dbError) throw new Error("Falha ao apagar a prova.");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["recentProofs"] });
+      queryClient.invalidateQueries({ queryKey: ["competitors"] });
+      showSuccess("Prova apagada com sucesso!");
+      setProofToDelete(null);
+    },
+    onError: (error: Error) => showError(error.message),
+    onMutate: () => showLoading("Apagando prova..."),
+    onSettled: (data, error, variables, context) => dismissToast(context as string),
   });
 
   if (isLoading) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Últimas Provas Adicionadas</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle>Últimas Provas</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="flex items-center space-x-4">
-              <Skeleton className="h-16 w-16 rounded-md" />
-              <div className="flex-1 space-y-2">
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-              </div>
-            </div>
+            <div key={i} className="flex items-center space-x-4"><Skeleton className="h-16 w-16 rounded-md" /><div className="flex-1 space-y-2"><Skeleton className="h-4 w-3/4" /><Skeleton className="h-4 w-1/2" /></div></div>
           ))}
         </CardContent>
       </Card>
@@ -62,63 +91,57 @@ export const RecentProofs = () => {
   if (isError) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Últimas Provas Adicionadas</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-destructive">{error.message}</p>
-        </CardContent>
+        <CardHeader><CardTitle>Últimas Provas</CardTitle></CardHeader>
+        <CardContent><p className="text-destructive">{error.message}</p></CardContent>
       </Card>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Últimas Provas Adicionadas</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {proofs && proofs.length > 0 ? (
-          <ul className="space-y-4">
-            {proofs.map((proof) => (
-              <li key={proof.id} className="flex items-center gap-4 p-2 rounded-lg hover:bg-muted/50">
-                {proof.photo_url ? (
-                  <img
-                    src={proof.photo_url}
-                    alt={proof.event_type}
-                    className="h-16 w-16 rounded-md object-cover"
-                  />
-                ) : (
-                  <div className="h-16 w-16 rounded-md bg-secondary flex items-center justify-center text-muted-foreground">
-                    <span>Sem foto</span>
+    <>
+      <Card>
+        <CardHeader><CardTitle>Últimas Provas Adicionadas</CardTitle></CardHeader>
+        <CardContent>
+          {proofs && proofs.length > 0 ? (
+            <ul className="space-y-4">
+              {proofs.map((proof) => (
+                <li key={proof.id} className="flex items-center gap-4 p-2 rounded-lg hover:bg-muted/50">
+                  {proof.photo_url ? <img src={proof.photo_url} alt={proof.event_type} className="h-16 w-16 rounded-md object-cover" /> : <div className="h-16 w-16 rounded-md bg-secondary flex items-center justify-center text-muted-foreground"><span>Sem foto</span></div>}
+                  <div className="flex-1">
+                    <p className="font-semibold">{proof.event_type}</p>
+                    <p className="text-sm text-muted-foreground">{proof.competitors.name} - <Badge variant={proof.points > 0 ? "default" : "destructive"}>{proof.points > 0 ? `+${proof.points}` : proof.points} pts</Badge></p>
                   </div>
-                )}
-                <div className="flex-1">
-                  <p className="font-semibold">{proof.event_type}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {proof.competitors.name} -{" "}
-                    <Badge variant={proof.points > 0 ? "default" : "destructive"}>
-                      {proof.points > 0 ? `+${proof.points}` : proof.points} pts
-                    </Badge>
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="icon" disabled>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button variant="destructive" size="icon" disabled>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-center text-muted-foreground py-8">
-            Nenhuma prova registrada ainda.
-          </p>
-        )}
-      </CardContent>
-    </Card>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="icon" onClick={() => setProofToEdit(proof)}><Pencil className="h-4 w-4" /></Button>
+                    <Button variant="destructive" size="icon" onClick={() => setProofToDelete(proof)}><Trash2 className="h-4 w-4" /></Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-center text-muted-foreground py-8">Nenhuma prova registrada ainda.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <AlertDialog open={!!proofToDelete} onOpenChange={(open) => !open && setProofToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader><AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle><AlertDialogDescription>Tem certeza que deseja apagar esta prova? Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => proofToDelete && deleteMutation.mutate(proofToDelete)} disabled={deleteMutation.isPending}>
+              {deleteMutation.isPending ? "Apagando..." : "Apagar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={!!proofToEdit} onOpenChange={(open) => !open && setProofToEdit(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader><DialogTitle>Editar Prova</DialogTitle></DialogHeader>
+          <ProofForm proofToEdit={proofToEdit} onSuccess={() => setProofToEdit(null)} />
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
