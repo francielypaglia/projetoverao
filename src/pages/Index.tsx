@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ProofForm } from "@/components/ProofForm";
 import { RecentProofs } from "@/components/RecentProofs";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface Competitor {
   id: string;
@@ -114,30 +115,36 @@ const Index = () => {
               {isLoading ? (
                 renderSkeletons()
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {competitors?.map((competitor) => (
-                    <Card
-                      key={competitor.id}
-                      className="flex flex-col shadow-lg rounded-xl"
-                    >
-                      <CardHeader className="flex-row items-center justify-between">
-                        <CardTitle className="text-3xl font-bold">
-                          {competitor.name}
-                        </CardTitle>
-                        {leader && leader.id === competitor.id && (
-                          <Badge className="bg-yellow-400 text-black hover:bg-yellow-500 text-sm">
-                            <Trophy className="mr-2 h-5 w-5" />
-                            Líder
-                          </Badge>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                  {competitors?.map((competitor) => {
+                    const isLeader = leader && leader.id === competitor.id;
+                    return (
+                      <Card
+                        key={competitor.id}
+                        className={cn(
+                          "flex flex-col shadow-lg rounded-xl transition-all duration-300",
+                          isLeader && "border-2 border-yellow-400 bg-yellow-50 dark:bg-yellow-950/50 shadow-xl shadow-yellow-500/20 transform md:scale-105"
                         )}
-                      </CardHeader>
-                      <CardContent className="flex-grow flex items-center justify-center py-10">
-                        <div className="text-8xl font-extrabold tracking-tighter">
-                          {competitor.score}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                      >
+                        <CardHeader className="flex-row items-center justify-between">
+                          <CardTitle className="text-3xl font-bold">
+                            {competitor.name}
+                          </CardTitle>
+                          {isLeader && (
+                            <Badge className="bg-yellow-400 text-black hover:bg-yellow-500 text-sm font-bold px-3 py-1">
+                              <Trophy className="mr-2 h-5 w-5" />
+                              Líder
+                            </Badge>
+                          )}
+                        </CardHeader>
+                        <CardContent className="flex-grow flex items-center justify-center py-10">
+                          <div className="text-8xl font-extrabold tracking-tighter">
+                            {competitor.score}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               )}
             </section>
