@@ -133,7 +133,7 @@ const Index = () => {
                           {isLeader && (
                             <Badge className="bg-yellow-400 text-black hover:bg-yellow-500 text-sm font-bold px-3 py-1">
                               <Trophy className="mr-2 h-5 w-5" />
-                              Líder
+                              A melhor
                             </Badge>
                           )}
                         </CardHeader>
