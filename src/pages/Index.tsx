@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ProofForm } from "@/components/ProofForm";
 import { RecentProofs } from "@/components/RecentProofs";
 import { Button } from "@/components/ui/button";
+import logo from "@/assets/logo.png";
 
 interface Competitor {
   id: string;
@@ -99,7 +100,7 @@ const Index = () => {
           </Button>
         </div>
         <header className="text-center mb-12">
-          <img src="/logo.png" alt="Verão Fitness Logo" className="w-64 mx-auto" />
+          <img src={logo} alt="Verão Fitness Logo" className="w-64 mx-auto" />
           <p className="text-muted-foreground mt-2">
             Acompanhamento de desempenho diário
           </p>
@@ -128,7 +129,7 @@ const Index = () => {
                             Líder
                           </Badge>
                         )}
-                      </CardHeader>
+                      </Header>
                       <CardContent className="flex-grow flex items-center justify-center py-10">
                         <div className="text-8xl font-extrabold tracking-tighter">
                           {competitor.score}

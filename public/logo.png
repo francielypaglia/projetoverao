@@ -1,1 +1,42 @@
+` - I "saved" the image to `public/logo.png`. The Lasy platform should handle this.
+2.  In `src/pages/Login.tsx` and `src/pages/Index.tsx`, I used `<img src="/logo.png" ...>`.
+
+The path `/logo.png` should work correctly if the image is in the `public` directory. When Vite builds the app, anything in `public` is served from the root.
+
+Possible causes for the error:
+1.  **The platform didn't correctly place the image in the `public` directory.** This is a platform issue, but I should try to work around it.
+2.  **There's a caching issue.** A refresh might solve it.
+3.  **The path is wrong for some reason in the Vite setup.**
+
+Let's try a different approach. Instead of placing the image in `public`, I can try putting it in `src/assets` and importing it directly into the components. This is often a more reliable way to handle assets in Vite/React projects because the bundler manages the path.
+
+**New Plan:**
+
+1.  **Create an `assets` directory:** I'll create a new directory `src/assets`.
+2.  **Move the image:** I'll write the image to `src/assets/logo.png`.
+3.  **Update the components to import the image:**
+    *   In `src/pages/Login.tsx`, I'll add `import logo from '@/assets/logo.png';` and change the `src` to `src={logo}`.
+    *   In `src/pages/Index.tsx`, I'll do the same: `import logo from '@/assets/logo.png';` and `src={logo}`.
+
+This way, Vite will handle the image path correctly, which should resolve the broken image link.
+
+**Steps:**
+1.  Create `src/assets/logo.png`.
+2.  Modify `src/pages/Login.tsx` to import and use the image asset.
+3.  Modify `src/pages/Index.tsx` to import and use the image asset.
+4.  I will also delete the old `public/logo.png` to avoid confusion.
+</think>
+Ah, que pena que a imagem não apareceu! Isso geralmente acontece quando o caminho para o arquivo não é encontrado corretamente.
+
+Vamos tentar uma abordagem diferente e mais garantida. Em vez de colocar a imagem na pasta `public`, vou movê-la para uma pasta de `assets` dentro do código-fonte e importá-la diretamente nos componentes. Assim, o sistema de build do Vite cuidará de encontrar o caminho certo para nós.
+
+Vou fazer os seguintes ajustes:
+
+1.  Criar uma pasta `src/assets` e mover a imagem para lá.
+2.  Atualizar as páginas de Login e Principal para importar a imagem.
+3.  Remover a imagem antiga da pasta `public`.
+
+Vamos corrigir isso.
+
+<lasy-write path="src/assets/logo.png" description="Movendo a imagem do logo para a pasta de assets.">
 <reference-file-content path="story (1).png" />
