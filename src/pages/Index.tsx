@@ -3,13 +3,14 @@ import { supabase } from "@/lib/supabase";
 import {
   Card,
   CardContent,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, LoaderCircle } from "lucide-react";
+import { Trophy } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ProofForm } from "@/components/ProofForm";
+import { RecentProofs } from "@/components/RecentProofs";
 
 interface Competitor {
   id: string;
@@ -47,26 +48,12 @@ const Index = () => {
       ? competitors[0]
       : null;
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="container mx-auto p-4 sm:p-8">
-          <header className="text-center mb-8">
-            <h1 className="text-4xl font-bold tracking-tight lg:text-5xl">
-              Projeto Verão ☀️
-            </h1>
-            <p className="text-muted-foreground mt-2">
-              Acompanhamento de desempenho diário
-            </p>
-          </header>
-          <main className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <Skeleton className="h-[300px] rounded-xl" />
-            <Skeleton className="h-[300px] rounded-xl" />
-          </main>
-        </div>
-      </div>
-    );
-  }
+  const renderSkeletons = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <Skeleton className="h-[300px] rounded-xl" />
+      <Skeleton className="h-[300px] rounded-xl" />
+    </div>
+  );
 
   if (isError) {
     return (
@@ -82,7 +69,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="container mx-auto p-4 sm:p-8">
-        <header className="text-center mb-8">
+        <header className="text-center mb-12">
           <h1 className="text-4xl font-bold tracking-tight lg:text-5xl">
             Projeto Verão ☀️
           </h1>
@@ -91,36 +78,51 @@ const Index = () => {
           </p>
         </header>
 
-        <main className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {competitors?.map((competitor) => (
-            <Card
-              key={competitor.id}
-              className="flex flex-col shadow-lg rounded-xl"
-            >
-              <CardHeader className="flex-row items-center justify-between">
-                <CardTitle className="text-3xl font-bold">
-                  {competitor.name}
-                </CardTitle>
-                {leader && leader.id === competitor.id && (
-                  <Badge className="bg-yellow-400 text-black hover:bg-yellow-500 text-sm">
-                    <Trophy className="mr-2 h-5 w-5" />
-                    Líder
-                  </Badge>
-                )}
-              </CardHeader>
-              <CardContent className="flex-grow flex items-center justify-center py-10">
-                <div className="text-8xl font-extrabold tracking-tighter">
-                  {competitor.score}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">Ranking</h2>
+              {isLoading ? (
+                renderSkeletons()
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {competitors?.map((competitor) => (
+                    <Card
+                      key={competitor.id}
+                      className="flex flex-col shadow-lg rounded-xl"
+                    >
+                      <CardHeader className="flex-row items-center justify-between">
+                        <CardTitle className="text-3xl font-bold">
+                          {competitor.name}
+                        </CardTitle>
+                        {leader && leader.id === competitor.id && (
+                          <Badge className="bg-yellow-400 text-black hover:bg-yellow-500 text-sm">
+                            <Trophy className="mr-2 h-5 w-5" />
+                            Líder
+                          </Badge>
+                        )}
+                      </CardHeader>
+                      <CardContent className="flex-grow flex items-center justify-center py-10">
+                        <div className="text-8xl font-extrabold tracking-tighter">
+                          {competitor.score}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
-              </CardContent>
-              <CardFooter className="flex flex-col gap-3 p-4">
-                <p className="text-sm text-muted-foreground">
-                  Use o formulário abaixo para adicionar uma nova prova.
-                </p>
-              </CardFooter>
-            </Card>
-          ))}
-        </main>
+              )}
+            </section>
+          </div>
+
+          <div className="lg:col-span-1 space-y-8">
+            <section>
+              <ProofForm />
+            </section>
+            <section>
+              <RecentProofs />
+            </section>
+          </div>
+        </div>
       </div>
     </div>
   );
