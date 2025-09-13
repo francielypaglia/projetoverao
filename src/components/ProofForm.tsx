@@ -27,7 +27,6 @@ import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast
 import { Skeleton } from "./ui/skeleton";
 
 const formSchema = z.object({
-  competitor_id: z.string({ required_error: "Selecione uma competidora." }),
   category: z.enum(["GAIN", "LOSE"], {
     required_error: "Selecione uma categoria.",
   }),
@@ -37,15 +36,19 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-interface Competitor {
-  id: string;
-  name: string;
-}
+const fetchCurrentUserCompetitor = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Usuária não autenticada.");
 
-const fetchCompetitors = async (): Promise<Competitor[]> => {
-  const { data, error } = await supabase.from("competitors").select("id, name");
-  if (error) throw new Error("Não foi possível carregar as competidoras.");
-  return data;
+  const { data: competitor, error } = await supabase
+    .from("competitors")
+    .select("id")
+    .eq("user_id", user.id)
+    .single();
+
+  if (error || !competitor) throw new Error("Perfil de competidora não encontrado para esta usuária.");
+  
+  return competitor;
 };
 
 interface ProofFormProps {
@@ -58,15 +61,15 @@ export const ProofForm = ({ proofToEdit, onSuccess }: ProofFormProps) => {
   const queryClient = useQueryClient();
   const [selectedCategory, setSelectedCategory] = useState<"GAIN" | "LOSE">("GAIN");
 
-  const { data: competitors, isLoading: isLoadingCompetitors } = useQuery<Competitor[]>({
-    queryKey: ["competitorsList"],
-    queryFn: fetchCompetitors,
+  const { data: currentUserCompetitor, isLoading: isLoadingCompetitor } = useQuery({
+    queryKey: ["currentUserCompetitor"],
+    queryFn: fetchCurrentUserCompetitor,
+    enabled: !isEditMode, // Só busca o competidor atual se não estiver em modo de edição
   });
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      competitor_id: undefined,
       category: "GAIN",
       event: undefined,
       photo: undefined,
@@ -81,7 +84,6 @@ export const ProofForm = ({ proofToEdit, onSuccess }: ProofFormProps) => {
       )?.value;
 
       form.reset({
-        competitor_id: proofToEdit.competitor_id,
         category: eventCategory,
         event: eventValue,
         photo: undefined,
@@ -89,7 +91,6 @@ export const ProofForm = ({ proofToEdit, onSuccess }: ProofFormProps) => {
       setSelectedCategory(eventCategory);
     } else {
       form.reset({
-        competitor_id: undefined,
         category: "GAIN",
         event: undefined,
         photo: undefined,
@@ -104,6 +105,10 @@ export const ProofForm = ({ proofToEdit, onSuccess }: ProofFormProps) => {
         (e) => e.value === values.event
       );
       if (!eventData) throw new Error("Evento inválido.");
+
+      // Em modo de edição, usamos o ID do competidor da prova. Em modo de criação, o da usuária logada.
+      const competitorId = isEditMode ? proofToEdit?.competitor_id : currentUserCompetitor?.id;
+      if (!competitorId) throw new Error("Não foi possível identificar a competidora.");
 
       let photoUrl: string | null = proofToEdit?.photo_url || null;
       const photoFile = values.photo?.[0];
@@ -122,7 +127,7 @@ export const ProofForm = ({ proofToEdit, onSuccess }: ProofFormProps) => {
       }
 
       const proofData = {
-        competitor_id: values.competitor_id,
+        competitor_id: competitorId,
         event_type: eventData.label,
         points: eventData.points,
         photo_url: photoUrl,
@@ -153,6 +158,20 @@ export const ProofForm = ({ proofToEdit, onSuccess }: ProofFormProps) => {
 
   const onSubmit = (values: FormValues) => mutation.mutate(values);
 
+  if (isLoadingCompetitor && !isEditMode) {
+    return (
+      <Card>
+        <CardHeader><CardTitle>Registrar Nova Prova</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-12 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -161,37 +180,6 @@ export const ProofForm = ({ proofToEdit, onSuccess }: ProofFormProps) => {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="competitor_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Competidora</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger disabled={isLoadingCompetitors}>
-                        <SelectValue placeholder="Selecione a competidora" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {isLoadingCompetitors ? (
-                        <div className="p-2">
-                          <Skeleton className="h-8 w-full" />
-                        </div>
-                      ) : (
-                        competitors?.map((c) => (
-                          <SelectItem key={c.id} value={c.id}>
-                            {c.name}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
             <FormField
               control={form.control}
               name="category"
