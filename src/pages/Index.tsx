@@ -13,7 +13,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ProofForm } from "@/components/ProofForm";
 import { RecentProofs } from "@/components/RecentProofs";
 import { Button } from "@/components/ui/button";
-import logo from "@/assets/logo.png";
 
 interface Competitor {
   id: string;
@@ -72,6 +71,8 @@ const Index = () => {
     competitors && competitors.length > 0 && competitors[0].score > 0
       ? competitors[0]
       : null;
+  
+  const logoUrl = "https://barvwsrvajuskejieyaj.supabase.co/storage/v1/object/public/proof_photos/story%20(3).png";
 
   const renderSkeletons = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -100,7 +101,7 @@ const Index = () => {
           </Button>
         </div>
         <header className="text-center mb-12">
-          <img src={logo} alt="Verão Fitness Logo" className="w-64 mx-auto" />
+          <img src={logoUrl} alt="Verão Fitness Logo" className="w-64 mx-auto" />
           <p className="text-muted-foreground mt-2">
             Acompanhamento de desempenho diário
           </p>
