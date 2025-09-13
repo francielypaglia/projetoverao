@@ -33,8 +33,22 @@ export const CompetitorManager = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("competitors").delete().eq("id", id);
-      if (error) throw new Error("Falha ao remover o competidor.");
+      // Primeiro, remove as provas associadas ao competidor
+      const { error: proofsError } = await supabase
+        .from("proofs")
+        .delete()
+        .eq("competitor_id", id);
+
+      if (proofsError) {
+        throw new Error("Falha ao remover as provas do competidor.");
+      }
+
+      // Depois, remove o competidor
+      const { error: competitorError } = await supabase.from("competitors").delete().eq("id", id);
+      
+      if (competitorError) {
+        throw new Error("Falha ao remover o competidor.");
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["competitorsList"] });
