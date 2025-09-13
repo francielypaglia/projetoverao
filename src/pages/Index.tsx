@@ -8,11 +8,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trophy } from "lucide-react";
+import { Trophy, LogOut } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProofForm } from "@/components/ProofForm";
 import { RecentProofs } from "@/components/RecentProofs";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Button } from "@/components/ui/button";
 
 interface Competitor {
   id: string;
@@ -64,6 +65,10 @@ const Index = () => {
     };
   }, [queryClient]);
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
+
   const leader =
     competitors && competitors.length > 0 && competitors[0].score > 0
       ? competitors[0]
@@ -90,8 +95,11 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="container mx-auto p-4 sm:p-8 relative">
-        <div className="absolute top-4 right-4">
+        <div className="absolute top-4 right-4 flex items-center gap-2">
           <ThemeToggle />
+          <Button variant="outline" size="icon" onClick={handleLogout}>
+            <LogOut className="h-[1.2rem] w-[1.2rem]" />
+          </Button>
         </div>
         <header className="text-center mb-12">
           <h1 className="text-4xl font-bold tracking-tight lg:text-5xl">
