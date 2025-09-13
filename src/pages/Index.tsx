@@ -129,7 +129,7 @@ const Index = () => {
                             Líder
                           </Badge>
                         )}
-                      </Header>
+                      </CardHeader>
                       <CardContent className="flex-grow flex items-center justify-center py-10">
                         <div className="text-8xl font-extrabold tracking-tighter">
                           {competitor.score}
