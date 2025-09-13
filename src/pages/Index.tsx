@@ -12,7 +12,6 @@ import { Trophy, LogOut } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProofForm } from "@/components/ProofForm";
 import { RecentProofs } from "@/components/RecentProofs";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 
 interface Competitor {
@@ -95,7 +94,6 @@ const Index = () => {
     <div className="min-h-screen bg-background text-foreground">
       <div className="container mx-auto p-4 sm:p-8 relative">
         <div className="absolute top-4 right-4 flex items-center gap-2">
-          <ThemeToggle />
           <Button variant="outline" size="icon" onClick={handleLogout}>
             <LogOut className="h-[1.2rem] w-[1.2rem]" />
           </Button>
