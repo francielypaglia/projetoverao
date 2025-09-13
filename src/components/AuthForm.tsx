@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -58,7 +58,7 @@ export const AuthForm = () => {
   const { data: availableCompetitors, isLoading: isLoadingCompetitors } = useQuery({
     queryKey: ["availableCompetitors"],
     queryFn: fetchAvailableCompetitors,
-    enabled: isSignUp, // Só busca quando o formulário é de cadastro
+    enabled: isSignUp,
   });
 
   const form = useForm<AuthFormValues>({
@@ -75,33 +75,19 @@ export const AuthForm = () => {
   const authMutation = useMutation({
     mutationFn: async (values: AuthFormValues) => {
       if (isSignUp) {
-        // Passo 1: Cadastrar o usuário
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        const { error } = await supabase.auth.signUp({
           email: values.email,
           password: values.password,
           options: {
             data: {
               first_name: values.firstName,
               last_name: values.lastName,
+              competitor_id: values.competitorId,
             },
           },
         });
-        if (signUpError) throw signUpError;
-        if (!signUpData.user) throw new Error("Usuário não foi criado.");
-
-        // Passo 2: Vincular o novo usuário à competidora selecionada
-        const { error: updateError } = await supabase
-          .from('competitors')
-          .update({ user_id: signUpData.user.id })
-          .eq('id', values.competitorId);
-
-        if (updateError) {
-          // Opcional: Idealmente, deveríamos deletar o usuário criado se o vínculo falhar.
-          // Por simplicidade, vamos apenas lançar o erro.
-          throw new Error(`Falha ao vincular competidora: ${updateError.message}`);
-        }
-
-        return "Conta criada e vinculada! Por favor, verifique seu e-mail para confirmar.";
+        if (error) throw error;
+        return "Conta criada! Por favor, verifique seu e-mail para confirmar.";
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email: values.email,
