@@ -1,6 +1,6 @@
 import { AuthForm } from "@/components/AuthForm";
 import { Card, CardContent, CardHeader, CardDescription } from "@/components/ui/card";
-import logo from "../assets/logo.png";
+import logo from "@/assets/logo.png";
 
 const Login = () => {
   return (
