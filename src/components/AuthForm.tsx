@@ -73,9 +73,17 @@ export const AuthForm = () => {
   });
 
   const onSubmit = (values: AuthFormValues) => {
-    if (isSignUp && (!values.firstName || !values.lastName)) {
-      form.setError("firstName", { type: "manual", message: "Nome e sobrenome são obrigatórios." });
-      return;
+    if (isSignUp) {
+      let hasError = false;
+      if (!values.firstName) {
+        form.setError("firstName", { type: "manual", message: "Nome é obrigatório." });
+        hasError = true;
+      }
+      if (!values.lastName) {
+        form.setError("lastName", { type: "manual", message: "Sobrenome é obrigatório." });
+        hasError = true;
+      }
+      if (hasError) return;
     }
     authMutation.mutate(values);
   };
