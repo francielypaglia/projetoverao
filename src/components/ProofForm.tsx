@@ -32,7 +32,7 @@ const formSchema = z.object({
     required_error: "Selecione uma categoria.",
   }),
   event: z.string({ required_error: "Selecione um tipo de pontuação." }),
-  photo: z.any().optional(),
+  photo: z.any().refine((files) => files?.length > 0, "A foto é obrigatória."),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -110,14 +110,18 @@ export const ProofForm = ({ proofToEdit, onSuccess }: ProofFormProps) => {
         const fileName = `${crypto.randomUUID()}-${photoFile.name}`;
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from("proof_photos")
-          .upload(fileName, photoFile, { upsert: isEditMode });
+          .upload(fileName, photoFile, { upsert: true }); // Use upsert to handle edits
 
         if (uploadError) throw new Error("Falha no upload da foto.");
 
         photoUrl = supabase.storage
           .from("proof_photos")
           .getPublicUrl(uploadData.path).data.publicUrl;
+      } else if (!isEditMode) {
+        // This case should not happen due to form validation, but as a safeguard:
+        throw new Error("A foto é obrigatória para novos registros.");
       }
+
 
       const proofData = {
         competitor_id: competitorId,
@@ -257,7 +261,7 @@ export const ProofForm = ({ proofToEdit, onSuccess }: ProofFormProps) => {
               name="photo"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Foto (Opcional)</FormLabel>
+                  <FormLabel>Foto da Prova</FormLabel>
                   <FormControl>
                     <Input
                       type="file"
