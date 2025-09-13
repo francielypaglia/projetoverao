@@ -48,6 +48,19 @@ const fetchRecentProofs = async (page: number) => {
   return { proofs: data as Proof[], count: count ?? 0 };
 };
 
+const formatBrasiliaTime = (dateString: string) => {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "America/Sao_Paulo",
+  }).format(date);
+};
+
 export const RecentProofs = () => {
   const [page, setPage] = useState(0);
   const [proofToDelete, setProofToDelete] = useState<Proof | null>(null);
@@ -133,11 +146,15 @@ export const RecentProofs = () => {
                   {proof.photo_url ? <img src={proof.photo_url} alt={proof.event_type} className="h-16 w-16 rounded-md object-cover" /> : <div className="h-16 w-16 rounded-md bg-secondary flex items-center justify-center text-muted-foreground"><span>Sem foto</span></div>}
                   <div className="flex-1">
                     <p className="font-semibold">{proof.event_type}</p>
-                    <p className="text-sm text-muted-foreground">{proof.competitors.name} - <Badge variant={proof.points > 0 ? "default" : "destructive"}>{proof.points > 0 ? `+${proof.points}` : proof.points} pts</Badge></p>
+                    <p className="text-sm text-muted-foreground">{proof.competitors.name}</p>
+                    <p className="text-xs text-muted-foreground">{formatBrasiliaTime(proof.created_at)}</p>
                   </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="icon" onClick={() => setProofToEdit(proof)}><Pencil className="h-4 w-4" /></Button>
-                    <Button variant="destructive" size="icon" onClick={() => setProofToDelete(proof)}><Trash2 className="h-4 w-4" /></Button>
+                  <div className="flex flex-col items-end gap-2">
+                    <Badge variant={proof.points > 0 ? "default" : "destructive"}>{proof.points > 0 ? `+${proof.points}` : proof.points} pts</Badge>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="icon" onClick={() => setProofToEdit(proof)}><Pencil className="h-4 w-4" /></Button>
+                      <Button variant="destructive" size="icon" onClick={() => setProofToDelete(proof)}><Trash2 className="h-4 w-4" /></Button>
+                    </div>
                   </div>
                 </li>
               ))}
