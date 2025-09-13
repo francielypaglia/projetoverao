@@ -99,9 +99,7 @@ const Index = () => {
           </Button>
         </div>
         <header className="text-center mb-12">
-          <h1 className="text-4xl font-bold tracking-tight lg:text-5xl">
-            Projeto Verão ☀️
-          </h1>
+          <img src="/logo.png" alt="Verão Fitness Logo" className="w-64 mx-auto" />
           <p className="text-muted-foreground mt-2">
             Acompanhamento de desempenho diário
           </p>
