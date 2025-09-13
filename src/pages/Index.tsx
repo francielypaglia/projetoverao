@@ -15,46 +15,46 @@ import { RecentProofs } from "@/components/RecentProofs";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 
-interface Profile {
+interface Competitor {
   id: string;
   name: string;
   score: number;
 }
 
-const fetchProfiles = async (): Promise<Profile[]> => {
+const fetchCompetitors = async (): Promise<Competitor[]> => {
   const { data, error } = await supabase
-    .from("profiles")
-    .select("id, first_name, last_name, score")
+    .from("competitors")
+    .select("id, name, score")
     .order("score", { ascending: false });
 
   if (error) {
-    console.error("Error fetching profiles:", error);
-    throw new Error("Não foi possível carregar os perfis.");
+    console.error("Error fetching competitors:", error);
+    throw new Error("Não foi possível carregar os competidores.");
   }
 
-  return data.map(p => ({ ...p, name: `${p.first_name} ${p.last_name}`.trim() }));
+  return data;
 };
 
 const Index = () => {
   const queryClient = useQueryClient();
   const {
-    data: profiles,
+    data: competitors,
     isLoading,
     isError,
     error,
-  } = useQuery<Profile[]>({
-    queryKey: ["profiles"],
-    queryFn: fetchProfiles,
+  } = useQuery<Competitor[]>({
+    queryKey: ["competitors"],
+    queryFn: fetchCompetitors,
   });
 
   useEffect(() => {
     const channel = supabase
-      .channel('realtime-profiles')
+      .channel('realtime-competitors')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'profiles' },
+        { event: '*', schema: 'public', table: 'competitors' },
         () => {
-          queryClient.invalidateQueries({ queryKey: ['profiles'] });
+          queryClient.invalidateQueries({ queryKey: ['competitors'] });
         }
       )
       .subscribe();
@@ -69,8 +69,8 @@ const Index = () => {
   };
 
   const leader =
-    profiles && profiles.length > 0 && profiles[0].score > 0
-      ? profiles[0]
+    competitors && competitors.length > 0 && competitors[0].score > 0
+      ? competitors[0]
       : null;
 
   const renderSkeletons = () => (
@@ -117,16 +117,16 @@ const Index = () => {
                 renderSkeletons()
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {profiles?.map((profile) => (
+                  {competitors?.map((competitor) => (
                     <Card
-                      key={profile.id}
+                      key={competitor.id}
                       className="flex flex-col shadow-lg rounded-xl"
                     >
                       <CardHeader className="flex-row items-center justify-between">
                         <CardTitle className="text-3xl font-bold">
-                          {profile.name}
+                          {competitor.name}
                         </CardTitle>
-                        {leader && leader.id === profile.id && (
+                        {leader && leader.id === competitor.id && (
                           <Badge className="bg-yellow-400 text-black hover:bg-yellow-500 text-sm">
                             <Trophy className="mr-2 h-5 w-5" />
                             Líder
@@ -135,7 +135,7 @@ const Index = () => {
                       </CardHeader>
                       <CardContent className="flex-grow flex items-center justify-center py-10">
                         <div className="text-8xl font-extrabold tracking-tighter">
-                          {profile.score}
+                          {competitor.score}
                         </div>
                       </CardContent>
                     </Card>

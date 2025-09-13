@@ -40,7 +40,7 @@ const fetchRecentProofs = async (page: number) => {
 
   const { data, error, count } = await supabase
     .from("proofs")
-    .select("*, profiles(first_name, last_name)", { count: "exact" })
+    .select("*, competitors(name)", { count: "exact" })
     .order("created_at", { ascending: false })
     .range(from, to);
 
@@ -88,13 +88,13 @@ export const RecentProofs = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["recentProofs"] });
-      queryClient.invalidateQueries({ queryKey: ["profiles"] }); // Alterado de 'competitors' para 'profiles'
+      queryClient.invalidateQueries({ queryKey: ["competitors"] });
       showSuccess("Prova apagada com sucesso!");
       setProofToDelete(null);
     },
     onError: (error: Error) => showError(error.message),
     onMutate: () => showLoading("Apagando prova..."),
-    onSettled: (data, error, variables, context) => dismissToast(context as string),
+    onSettled: (_data, _error, _variables, context) => dismissToast(context as string),
   });
 
   const totalPages = data?.count ? Math.ceil(data.count / PAGE_SIZE) : 0;
@@ -133,7 +133,7 @@ export const RecentProofs = () => {
                   {proof.photo_url ? <img src={proof.photo_url} alt={proof.event_type} className="h-16 w-16 rounded-md object-cover" /> : <div className="h-16 w-16 rounded-md bg-secondary flex items-center justify-center text-muted-foreground"><span>Sem foto</span></div>}
                   <div className="flex-1">
                     <p className="font-semibold">{proof.event_type}</p>
-                    <p className="text-sm text-muted-foreground">{`${proof.profiles.first_name} ${proof.profiles.last_name}`} - <Badge variant={proof.points > 0 ? "default" : "destructive"}>{proof.points > 0 ? `+${proof.points}` : proof.points} pts</Badge></p>
+                    <p className="text-sm text-muted-foreground">{proof.competitors.name} - <Badge variant={proof.points > 0 ? "default" : "destructive"}>{proof.points > 0 ? `+${proof.points}` : proof.points} pts</Badge></p>
                   </div>
                   <div className="flex gap-2">
                     <Button variant="outline" size="icon" onClick={() => setProofToEdit(proof)}><Pencil className="h-4 w-4" /></Button>
