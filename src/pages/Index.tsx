@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ProofForm } from "@/components/ProofForm";
 import { RecentProofs } from "@/components/RecentProofs";
 import { Button } from "@/components/ui/button";
-import logo from "@/assets/logo.png";
+import logo from "../assets/logo.png";
 
 interface Competitor {
   id: string;
