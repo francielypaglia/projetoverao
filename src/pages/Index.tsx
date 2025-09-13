@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase";
 import {
   Card,
   CardContent,
@@ -6,82 +7,77 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, ArrowUp, ArrowDown } from "lucide-react";
+import { Trophy, LoaderCircle } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Competitor {
-  id: number;
+  id: string;
   name: string;
   score: number;
 }
 
-interface Action {
-  label: string;
-  points: number;
-  variant: "default" | "destructive";
-  icon: React.ReactNode;
-}
+const fetchCompetitors = async (): Promise<Competitor[]> => {
+  const { data, error } = await supabase
+    .from("competitors")
+    .select("id, name, score")
+    .order("score", { ascending: false });
 
-const actions: Action[] = [
-  {
-    label: "Treino Concluído",
-    points: 10,
-    variant: "default",
-    icon: <ArrowUp className="mr-2 h-4 w-4" />,
-  },
-  {
-    label: "Dieta 100%",
-    points: 5,
-    variant: "default",
-    icon: <ArrowUp className="mr-2 h-4 w-4" />,
-  },
-  {
-    label: "Bebeu 2L+ Água",
-    points: 3,
-    variant: "default",
-    icon: <ArrowUp className="mr-2 h-4 w-4" />,
-  },
-  {
-    label: "Furou a Dieta",
-    points: -5,
-    variant: "destructive",
-    icon: <ArrowDown className="mr-2 h-4 w-4" />,
-  },
-  {
-    label: "Não Treinou",
-    points: -10,
-    variant: "destructive",
-    icon: <ArrowDown className="mr-2 h-4 w-4" />,
-  },
-];
+  if (error) {
+    console.error("Error fetching competitors:", error);
+    throw new Error("Não foi possível carregar os competidores.");
+  }
 
-const initialCompetitors: Competitor[] = [
-  { id: 1, name: "Amanda", score: 0 },
-  { id: 2, name: "Franciely", score: 0 },
-];
+  return data;
+};
 
 const Index = () => {
-  const [competitors, setCompetitors] =
-    useState<Competitor[]>(initialCompetitors);
+  const {
+    data: competitors,
+    isLoading,
+    isError,
+    error,
+  } = useQuery<Competitor[]>({
+    queryKey: ["competitors"],
+    queryFn: fetchCompetitors,
+  });
 
-  const handleAction = (competitorId: number, points: number) => {
-    setCompetitors((prevCompetitors) =>
-      prevCompetitors.map((c) =>
-        c.id === competitorId ? { ...c, score: c.score + points } : c,
-      ),
+  const leader =
+    competitors && competitors.length > 0 && competitors[0].score > 0
+      ? competitors[0]
+      : null;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="container mx-auto p-4 sm:p-8">
+          <header className="text-center mb-8">
+            <h1 className="text-4xl font-bold tracking-tight lg:text-5xl">
+              Projeto Verão ☀️
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              Acompanhamento de desempenho diário
+            </p>
+          </header>
+          <main className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <Skeleton className="h-[300px] rounded-xl" />
+            <Skeleton className="h-[300px] rounded-xl" />
+          </main>
+        </div>
+      </div>
     );
-  };
+  }
 
-  const getLeader = (): Competitor | null => {
-    if (competitors[0].score === 0 && competitors[1].score === 0) return null;
-    if (competitors[0].score === competitors[1].score) return null;
-    return competitors.reduce((prev, current) =>
-      prev.score > current.score ? prev : current,
+  if (isError) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <h2 className="text-2xl font-bold text-destructive mb-4">
+          Ocorreu um erro
+        </h2>
+        <p className="text-muted-foreground">{error.message}</p>
+      </div>
     );
-  };
-
-  const leader = getLeader();
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -96,7 +92,7 @@ const Index = () => {
         </header>
 
         <main className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {competitors.map((competitor) => (
+          {competitors?.map((competitor) => (
             <Card
               key={competitor.id}
               className="flex flex-col shadow-lg rounded-xl"
@@ -118,20 +114,9 @@ const Index = () => {
                 </div>
               </CardContent>
               <CardFooter className="flex flex-col gap-3 p-4">
-                <div className="w-full grid grid-cols-1 gap-2">
-                  {actions.map((action) => (
-                    <Button
-                      key={action.label}
-                      variant={action.variant}
-                      onClick={() => handleAction(competitor.id, action.points)}
-                      className="w-full justify-center py-6 text-base"
-                    >
-                      {action.icon}
-                      {action.label} ({action.points > 0 ? "+" : ""}
-                      {action.points})
-                    </Button>
-                  ))}
-                </div>
+                <p className="text-sm text-muted-foreground">
+                  Use o formulário abaixo para adicionar uma nova prova.
+                </p>
               </CardFooter>
             </Card>
           ))}
