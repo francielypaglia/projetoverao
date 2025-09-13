@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import {
   Card,
@@ -34,6 +35,7 @@ const fetchCompetitors = async (): Promise<Competitor[]> => {
 };
 
 const Index = () => {
+  const queryClient = useQueryClient();
   const {
     data: competitors,
     isLoading,
@@ -43,6 +45,24 @@ const Index = () => {
     queryKey: ["competitors"],
     queryFn: fetchCompetitors,
   });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('realtime-competitors')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'competitors' },
+        (payload) => {
+          console.log('Competitor change received!', payload);
+          queryClient.invalidateQueries({ queryKey: ['competitors'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const leader =
     competitors && competitors.length > 0 && competitors[0].score > 0
@@ -58,7 +78,7 @@ const Index = () => {
 
   if (isError) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground">
         <h2 className="text-2xl font-bold text-destructive mb-4">
           Ocorreu um erro
         </h2>

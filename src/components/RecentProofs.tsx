@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { type Proof } from "@/lib/definitions";
@@ -51,6 +51,24 @@ export const RecentProofs = () => {
     queryKey: ["recentProofs"],
     queryFn: fetchRecentProofs,
   });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('realtime-proofs')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'proofs' },
+        (payload) => {
+          console.log('Proof change received!', payload);
+          queryClient.invalidateQueries({ queryKey: ['recentProofs'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const deleteMutation = useMutation({
     mutationFn: async (proof: Proof) => {
