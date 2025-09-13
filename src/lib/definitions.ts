@@ -19,7 +19,8 @@ export type Proof = {
   event_type: string;
   points: number;
   photo_url: string | null;
-  competitors: {
-    name: string;
+  profiles: {
+    first_name: string;
+    last_name: string;
   };
 };

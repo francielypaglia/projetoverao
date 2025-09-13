@@ -126,7 +126,7 @@ export const ProofForm = ({ proofToEdit, onSuccess }: ProofFormProps) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["recentProofs"] });
-      queryClient.invalidateQueries({ queryKey: ["competitors"] });
+      queryClient.invalidateQueries({ queryKey: ["profiles"] }); // Alterado de 'competitors' para 'profiles'
       showSuccess(isEditMode ? "Prova atualizada!" : "Prova registrada!");
       if (onSuccess) onSuccess();
       if (!isEditMode) form.reset();

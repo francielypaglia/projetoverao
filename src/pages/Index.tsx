@@ -1,14 +1,162 @@
-// 1) Remova esta linha de importação:
-// import { CompetitorManager } from "@/components/CompetitorManager";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Trophy, LogOut } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ProofForm } from "@/components/ProofForm";
+import { RecentProofs } from "@/components/RecentProofs";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { Button } from "@/components/ui/button";
 
-...
+interface Profile {
+  id: string;
+  name: string;
+  score: number;
+}
 
-<div className="lg:col-span-1 space-y-8">
-  {/* Antes havia <CompetitorManager /> aqui — agora removido */}
-  <section>
-    <ProofForm />
-  </section>
-  <section>
-    <RecentProofs />
-  </section>
-</div>
+const fetchProfiles = async (): Promise<Profile[]> => {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, first_name, last_name, score")
+    .order("score", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching profiles:", error);
+    throw new Error("Não foi possível carregar os perfis.");
+  }
+
+  return data.map(p => ({ ...p, name: `${p.first_name} ${p.last_name}`.trim() }));
+};
+
+const Index = () => {
+  const queryClient = useQueryClient();
+  const {
+    data: profiles,
+    isLoading,
+    isError,
+    error,
+  } = useQuery<Profile[]>({
+    queryKey: ["profiles"],
+    queryFn: fetchProfiles,
+  });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('realtime-profiles')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'profiles' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['profiles'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
+
+  const leader =
+    profiles && profiles.length > 0 && profiles[0].score > 0
+      ? profiles[0]
+      : null;
+
+  const renderSkeletons = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <Skeleton className="h-[200px] rounded-xl" />
+      <Skeleton className="h-[200px] rounded-xl" />
+    </div>
+  );
+
+  if (isError) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground">
+        <h2 className="text-2xl font-bold text-destructive mb-4">
+          Ocorreu um erro
+        </h2>
+        <p className="text-muted-foreground">{error.message}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="container mx-auto p-4 sm:p-8 relative">
+        <div className="absolute top-4 right-4 flex items-center gap-2">
+          <ThemeToggle />
+          <Button variant="outline" size="icon" onClick={handleLogout}>
+            <LogOut className="h-[1.2rem] w-[1.2rem]" />
+          </Button>
+        </div>
+        <header className="text-center mb-12">
+          <h1 className="text-4xl font-bold tracking-tight lg:text-5xl">
+            Projeto Verão ☀️
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            Acompanhamento de desempenho diário
+          </p>
+        </header>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <section>
+              <h2 className="text-2xl font-semibold mb-4">Ranking</h2>
+              {isLoading ? (
+                renderSkeletons()
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {profiles?.map((profile) => (
+                    <Card
+                      key={profile.id}
+                      className="flex flex-col shadow-lg rounded-xl"
+                    >
+                      <CardHeader className="flex-row items-center justify-between">
+                        <CardTitle className="text-3xl font-bold">
+                          {profile.name}
+                        </CardTitle>
+                        {leader && leader.id === profile.id && (
+                          <Badge className="bg-yellow-400 text-black hover:bg-yellow-500 text-sm">
+                            <Trophy className="mr-2 h-5 w-5" />
+                            Líder
+                          </Badge>
+                        )}
+                      </CardHeader>
+                      <CardContent className="flex-grow flex items-center justify-center py-10">
+                        <div className="text-8xl font-extrabold tracking-tighter">
+                          {profile.score}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </section>
+          </div>
+
+          <div className="lg:col-span-1 space-y-8">
+            <section>
+              <ProofForm />
+            </section>
+            <section>
+              <RecentProofs />
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Index;
