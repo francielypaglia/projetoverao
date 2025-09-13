@@ -5,6 +5,7 @@ import { type Proof } from "@/lib/definitions";
 import {
   Card,
   CardContent,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -31,25 +32,31 @@ import {
 import { ProofForm } from "./ProofForm";
 import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
 
-const fetchRecentProofs = async (): Promise<Proof[]> => {
-  const { data, error } = await supabase
+const PAGE_SIZE = 5;
+
+const fetchRecentProofs = async (page: number) => {
+  const from = page * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+
+  const { data, error, count } = await supabase
     .from("proofs")
-    .select("*, competitors(name)")
+    .select("*, competitors(name)", { count: "exact" })
     .order("created_at", { ascending: false })
-    .limit(10);
+    .range(from, to);
 
   if (error) throw new Error("Não foi possível carregar as provas recentes.");
-  return data as Proof[];
+  return { proofs: data as Proof[], count: count ?? 0 };
 };
 
 export const RecentProofs = () => {
+  const [page, setPage] = useState(0);
   const [proofToDelete, setProofToDelete] = useState<Proof | null>(null);
   const [proofToEdit, setProofToEdit] = useState<Proof | null>(null);
   const queryClient = useQueryClient();
 
-  const { data: proofs, isLoading, isError, error } = useQuery<Proof[]>({
-    queryKey: ["recentProofs"],
-    queryFn: fetchRecentProofs,
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ["recentProofs", page],
+    queryFn: () => fetchRecentProofs(page),
   });
 
   useEffect(() => {
@@ -59,7 +66,6 @@ export const RecentProofs = () => {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'proofs' },
         (payload) => {
-          console.log('Proof change received!', payload);
           queryClient.invalidateQueries({ queryKey: ['recentProofs'] });
         }
       )
@@ -75,12 +81,10 @@ export const RecentProofs = () => {
       if (proof.photo_url) {
         const photoPath = proof.photo_url.split("/").pop();
         if (photoPath) {
-          const { error: storageError } = await supabase.storage.from("proof_photos").remove([photoPath]);
-          if (storageError) console.error("Erro ao apagar foto:", storageError.message);
+          await supabase.storage.from("proof_photos").remove([photoPath]);
         }
       }
-      const { error: dbError } = await supabase.from("proofs").delete().eq("id", proof.id);
-      if (dbError) throw new Error("Falha ao apagar a prova.");
+      await supabase.from("proofs").delete().eq("id", proof.id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["recentProofs"] });
@@ -92,6 +96,8 @@ export const RecentProofs = () => {
     onMutate: () => showLoading("Apagando prova..."),
     onSettled: (data, error, variables, context) => dismissToast(context as string),
   });
+
+  const totalPages = data?.count ? Math.ceil(data.count / PAGE_SIZE) : 0;
 
   if (isLoading) {
     return (
@@ -120,9 +126,9 @@ export const RecentProofs = () => {
       <Card>
         <CardHeader><CardTitle>Últimas Provas Adicionadas</CardTitle></CardHeader>
         <CardContent>
-          {proofs && proofs.length > 0 ? (
+          {data?.proofs && data.proofs.length > 0 ? (
             <ul className="space-y-4">
-              {proofs.map((proof) => (
+              {data.proofs.map((proof) => (
                 <li key={proof.id} className="flex items-center gap-4 p-2 rounded-lg hover:bg-muted/50">
                   {proof.photo_url ? <img src={proof.photo_url} alt={proof.event_type} className="h-16 w-16 rounded-md object-cover" /> : <div className="h-16 w-16 rounded-md bg-secondary flex items-center justify-center text-muted-foreground"><span>Sem foto</span></div>}
                   <div className="flex-1">
@@ -140,6 +146,13 @@ export const RecentProofs = () => {
             <p className="text-center text-muted-foreground py-8">Nenhuma prova registrada ainda.</p>
           )}
         </CardContent>
+        {totalPages > 1 && (
+          <CardFooter className="flex justify-between items-center">
+            <Button onClick={() => setPage(p => p - 1)} disabled={page === 0}>Anterior</Button>
+            <span className="text-sm text-muted-foreground">Página {page + 1} de {totalPages}</span>
+            <Button onClick={() => setPage(p => p + 1)} disabled={page + 1 >= totalPages}>Próximo</Button>
+          </CardFooter>
+        )}
       </Card>
 
       <AlertDialog open={!!proofToDelete} onOpenChange={(open) => !open && setProofToDelete(null)}>
