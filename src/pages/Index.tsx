@@ -11,6 +11,7 @@ import { Trophy } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProofForm } from "@/components/ProofForm";
 import { RecentProofs } from "@/components/RecentProofs";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 interface Competitor {
   id: string;
@@ -67,8 +68,11 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="container mx-auto p-4 sm:p-8">
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="container mx-auto p-4 sm:p-8 relative">
+        <div className="absolute top-4 right-4">
+          <ThemeToggle />
+        </div>
         <header className="text-center mb-12">
           <h1 className="text-4xl font-bold tracking-tight lg:text-5xl">
             Projeto Verão ☀️
