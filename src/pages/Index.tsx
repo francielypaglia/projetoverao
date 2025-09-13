@@ -14,6 +14,7 @@ import { ProofForm } from "@/components/ProofForm";
 import { RecentProofs } from "@/components/RecentProofs";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
+import { CompetitorManager } from "@/components/CompetitorManager";
 
 interface Competitor {
   id: string;
@@ -56,6 +57,7 @@ const Index = () => {
         (payload) => {
           console.log('Competitor change received!', payload);
           queryClient.invalidateQueries({ queryKey: ['competitors'] });
+          queryClient.invalidateQueries({ queryKey: ['competitorsList'] });
         }
       )
       .subscribe();
@@ -148,6 +150,9 @@ const Index = () => {
 
           <div className="lg:col-span-1 space-y-8">
             <section>
+              <CompetitorManager />
+            </section>
+            <section>
               <ProofForm />
             </section>
             <section>
@@ -158,6 +163,3 @@ const Index = () => {
       </div>
     </div>
   );
-};
-
-export default Index;
