@@ -14,6 +14,7 @@ import { ProofForm } from "@/components/ProofForm";
 import { RecentProofs } from "@/components/RecentProofs";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { PerfectDaysCalendar } from "@/components/PerfectDaysCalendar";
 
 interface Competitor {
   id: string;
@@ -156,6 +157,9 @@ const Index = () => {
             </section>
             <section>
               <RecentProofs />
+            </section>
+            <section>
+              <PerfectDaysCalendar />
             </section>
           </div>
         </div>
