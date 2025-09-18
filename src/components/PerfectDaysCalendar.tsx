@@ -66,59 +66,71 @@ export const PerfectDaysCalendar = () => {
   }, [queryClient]);
 
   const perfectDays = useMemo(() => {
-    if (!proofs) return new Map<string, string[]>();
-
-    const proofsByDayAndCompetitor = proofs.reduce((acc, proof) => {
-      if (!proof.competitors) return acc;
-      const day = format(parseISO(proof.created_at), "yyyy-MM-dd");
-      const competitorId = proof.competitors.id;
-
-      if (!acc[day]) acc[day] = {};
-      if (!acc[day][competitorId]) {
-        acc[day][competitorId] = {
-          proofs: [],
-          competitorName: proof.competitors.name,
-        };
-      }
-      acc[day][competitorId].proofs.push(proof);
-      return acc;
-    }, {} as Record<string, Record<string, { proofs: typeof proofs; competitorName: string }>>);
-
     const perfectDaysMap = new Map<string, string[]>();
 
-    for (const day in proofsByDayAndCompetitor) {
-      for (const competitorId in proofsByDayAndCompetitor[day]) {
-        const { proofs: dailyProofs, competitorName } =
-          proofsByDayAndCompetitor[day][competitorId];
+    if (proofs) {
+      const proofsByDayAndCompetitor = proofs.reduce((acc, proof) => {
+        if (!proof.competitors) return acc;
+        const day = format(parseISO(proof.created_at), "yyyy-MM-dd");
+        const competitorId = proof.competitors.id;
 
-        const counts = dailyProofs.reduce(
-          (acc, p) => {
-            acc[p.event_type] = (acc[p.event_type] || 0) + 1;
-            if (p.points < 0) {
-              acc.negativePoints = (acc.negativePoints || 0) + 1;
+        if (!acc[day]) acc[day] = {};
+        if (!acc[day][competitorId]) {
+          acc[day][competitorId] = {
+            proofs: [],
+            competitorName: proof.competitors.name,
+          };
+        }
+        acc[day][competitorId].proofs.push(proof);
+        return acc;
+      }, {} as Record<string, Record<string, { proofs: typeof proofs; competitorName: string }>>);
+
+      for (const day in proofsByDayAndCompetitor) {
+        for (const competitorId in proofsByDayAndCompetitor[day]) {
+          const { proofs: dailyProofs, competitorName } =
+            proofsByDayAndCompetitor[day][competitorId];
+
+          const counts = dailyProofs.reduce(
+            (acc, p) => {
+              acc[p.event_type] = (acc[p.event_type] || 0) + 1;
+              if (p.points < 0) {
+                acc.negativePoints = (acc.negativePoints || 0) + 1;
+              }
+              return acc;
+            },
+            {} as Record<string, number>
+          );
+
+          const isPerfect =
+            Object.entries(PERFECT_DAY_CRITERIA).every(
+              ([event, requiredCount]) => (counts[event] || 0) >= requiredCount
+            ) && (counts.negativePoints || 0) === 0;
+
+          if (isPerfect) {
+            const initial = competitorName.charAt(0).toUpperCase();
+            const dayInitials = perfectDaysMap.get(day) || [];
+            if (!dayInitials.includes(initial)) {
+              perfectDaysMap.set(day, [...dayInitials, initial]);
             }
-            return acc;
-          },
-          {} as Record<string, number>
-        );
-
-        const isPerfect =
-          Object.entries(PERFECT_DAY_CRITERIA).every(
-            ([event, requiredCount]) => (counts[event] || 0) >= requiredCount
-          ) && (counts.negativePoints || 0) === 0;
-
-        if (isPerfect) {
-          const initial = competitorName.charAt(0).toUpperCase();
-          const dayInitials = perfectDaysMap.get(day) || [];
-          if (!dayInitials.includes(initial)) {
-            perfectDaysMap.set(day, [...dayInitials, initial]);
           }
         }
       }
     }
 
+    // Adiciona manualmente 'F' para os dias 15, 16 e 17 do mês atual
+    const manualDays = [15, 16, 17];
+    manualDays.forEach(dayNumber => {
+      const date = new Date(month.getFullYear(), month.getMonth(), dayNumber);
+      const dayKey = format(date, "yyyy-MM-dd");
+
+      const existingInitials = perfectDaysMap.get(dayKey) || [];
+      if (!existingInitials.includes("F")) {
+        perfectDaysMap.set(dayKey, [...existingInitials, "F"]);
+      }
+    });
+
     return perfectDaysMap;
-  }, [proofs]);
+  }, [proofs, month]);
 
   const CustomDayContent = (props: DayContentProps) => {
     const dayKey = format(props.date, "yyyy-MM-dd");
