@@ -106,6 +106,15 @@ export const PerfectDaysCalendar = () => {
               ([event, requiredCount]) => (counts[event] || 0) >= requiredCount
             ) && (counts.negativePoints || 0) === 0;
 
+          // DEBUG LOG
+          console.log({
+            dia: day,
+            competidora: competitorName,
+            contagemDeProvas: counts,
+            criterio: PERFECT_DAY_CRITERIA,
+            foiPerfeito: isPerfect,
+          });
+
           if (isPerfect) {
             const initial = competitorName.charAt(0).toUpperCase();
             const dayInitials = perfectDaysMap.get(day) || [];
