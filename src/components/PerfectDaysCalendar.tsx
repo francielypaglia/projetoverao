@@ -10,21 +10,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DayContent, DayContentProps } from "react-day-picker";
 import { cn } from "@/lib/utils";
 
-// Definição dos critérios para um dia perfeito
-const PERFECT_DAY_CRITERIA = {
-  "Refeição perfeita": 5,
-  "Treino de musculação": 1,
-  "Cardio ≥ 20 min": 1,
-  "Meta diária de ingestão de água": 1,
-};
-
 const fetchProofsForMonth = async (month: Date) => {
   const startDate = startOfMonth(month);
   const endDate = endOfMonth(month);
 
   const { data, error } = await supabase
     .from("proofs")
-    .select("created_at, event_type, points, competitors(id, name)")
+    .select("created_at, points, competitors(id, name)")
     .gte("created_at", startDate.toISOString())
     .lte("created_at", endDate.toISOString());
 
@@ -83,48 +75,18 @@ export const PerfectDaysCalendar = () => {
         }
         acc[day][competitorId].proofs.push(proof);
         return acc;
-      }, {} as Record<string, Record<string, { proofs: typeof proofs; competitorName: string }>>);
+      }, {} as Record<string, Record<string, { proofs: (typeof proofs); competitorName: string }>>);
 
       for (const day in proofsByDayAndCompetitor) {
         for (const competitorId in proofsByDayAndCompetitor[day]) {
           const { proofs: dailyProofs, competitorName } =
             proofsByDayAndCompetitor[day][competitorId];
 
-          const counts = dailyProofs.reduce(
-            (acc, p) => {
-              acc[p.event_type] = (acc[p.event_type] || 0) + 1;
-              if (p.points < 0) {
-                acc.negativePoints = (acc.negativePoints || 0) + 1;
-              }
-              return acc;
-            },
-            {} as Record<string, number>
-          );
+          // Nova regra: Somar os pontos do dia
+          const dailyScore = dailyProofs.reduce((total, p) => total + p.points, 0);
 
-          // Lógica de depuração aprimorada
-          const verificationDetails = Object.entries(PERFECT_DAY_CRITERIA).map(([event, requiredCount]) => {
-            const actualCount = counts[event] || 0;
-            return {
-              Critério: event,
-              Necessário: requiredCount,
-              Registrado: actualCount,
-              Status: actualCount >= requiredCount ? "✅ OK" : "❌ FALHOU",
-            };
-          });
-
-          const hasNegativePoints = (counts.negativePoints || 0) > 0;
-          verificationDetails.push({
-            Critério: "Pontos Negativos",
-            Necessário: 0,
-            Registrado: counts.negativePoints || 0,
-            Status: !hasNegativePoints ? "✅ OK" : "❌ FALHOU",
-          });
-
-          const isPerfect = verificationDetails.every(detail => detail.Status.includes("OK"));
-
-          console.log(`--- Verificação para ${competitorName} no dia ${day} ---`);
-          console.table(verificationDetails);
-          console.log(`Resultado Final: Dia Perfeito? ${isPerfect}`);
+          // Um dia é "perfeito" se a pontuação for >= 30
+          const isPerfect = dailyScore >= 30;
           
           if (isPerfect) {
             const initial = competitorName.charAt(0).toUpperCase();
