@@ -101,11 +101,31 @@ export const PerfectDaysCalendar = () => {
             {} as Record<string, number>
           );
 
-          const isPerfect =
-            Object.entries(PERFECT_DAY_CRITERIA).every(
-              ([event, requiredCount]) => (counts[event] || 0) >= requiredCount
-            ) && (counts.negativePoints || 0) === 0;
+          // Lógica de depuração aprimorada
+          const verificationDetails = Object.entries(PERFECT_DAY_CRITERIA).map(([event, requiredCount]) => {
+            const actualCount = counts[event] || 0;
+            return {
+              Critério: event,
+              Necessário: requiredCount,
+              Registrado: actualCount,
+              Status: actualCount >= requiredCount ? "✅ OK" : "❌ FALHOU",
+            };
+          });
 
+          const hasNegativePoints = (counts.negativePoints || 0) > 0;
+          verificationDetails.push({
+            Critério: "Pontos Negativos",
+            Necessário: 0,
+            Registrado: counts.negativePoints || 0,
+            Status: !hasNegativePoints ? "✅ OK" : "❌ FALHOU",
+          });
+
+          const isPerfect = verificationDetails.every(detail => detail.Status.includes("OK"));
+
+          console.log(`--- Verificação para ${competitorName} no dia ${day} ---`);
+          console.table(verificationDetails);
+          console.log(`Resultado Final: Dia Perfeito? ${isPerfect}`);
+          
           if (isPerfect) {
             const initial = competitorName.charAt(0).toUpperCase();
             const dayInitials = perfectDaysMap.get(day) || [];
