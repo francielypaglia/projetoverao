@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
 import { Skeleton } from "./ui/skeleton";
@@ -33,6 +34,7 @@ const formSchema = z.object({
   }),
   event: z.string({ required_error: "Selecione um tipo de pontuação." }),
   photo: z.any().refine((files) => files?.length > 0, "A foto é obrigatória."),
+  notes: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -65,6 +67,7 @@ export const ProofForm = ({ proofToEdit, onSuccess }: ProofFormProps) => {
       category: "GAIN",
       event: undefined,
       photo: undefined,
+      notes: "",
     },
   });
 
@@ -80,6 +83,7 @@ export const ProofForm = ({ proofToEdit, onSuccess }: ProofFormProps) => {
         category: eventCategory,
         event: eventValue,
         photo: undefined,
+        notes: proofToEdit.notes || "",
       });
       setSelectedCategory(eventCategory);
     } else {
@@ -88,6 +92,7 @@ export const ProofForm = ({ proofToEdit, onSuccess }: ProofFormProps) => {
         category: "GAIN",
         event: undefined,
         photo: undefined,
+        notes: "",
       });
       setSelectedCategory("GAIN");
     }
@@ -110,7 +115,7 @@ export const ProofForm = ({ proofToEdit, onSuccess }: ProofFormProps) => {
         const fileName = `${crypto.randomUUID()}-${photoFile.name}`;
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from("proof_photos")
-          .upload(fileName, photoFile, { upsert: true }); // Use upsert to handle edits
+          .upload(fileName, photoFile, { upsert: true });
 
         if (uploadError) throw new Error("Falha no upload da foto.");
 
@@ -118,16 +123,15 @@ export const ProofForm = ({ proofToEdit, onSuccess }: ProofFormProps) => {
           .from("proof_photos")
           .getPublicUrl(uploadData.path).data.publicUrl;
       } else if (!isEditMode) {
-        // This case should not happen due to form validation, but as a safeguard:
         throw new Error("A foto é obrigatória para novos registros.");
       }
-
 
       const proofData = {
         competitor_id: competitorId,
         event_type: eventData.label,
         points: eventData.points,
         photo_url: photoUrl,
+        notes: values.notes,
       };
 
       if (isEditMode) {
@@ -268,6 +272,20 @@ export const ProofForm = ({ proofToEdit, onSuccess }: ProofFormProps) => {
                       accept="image/*"
                       onChange={(e) => field.onChange(e.target.files)}
                     />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Observação (Opcional)</FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="Algum detalhe sobre a prova..." {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

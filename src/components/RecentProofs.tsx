@@ -40,7 +40,7 @@ const fetchRecentProofs = async (page: number) => {
 
   const { data, error, count } = await supabase
     .from("proofs")
-    .select("*, competitors(name)", { count: "exact" })
+    .select("*, notes, competitors(name)", { count: "exact" })
     .order("created_at", { ascending: false })
     .range(from, to);
 
@@ -142,12 +142,13 @@ export const RecentProofs = () => {
           {data?.proofs && data.proofs.length > 0 ? (
             <ul className="space-y-4">
               {data.proofs.map((proof) => (
-                <li key={proof.id} className="flex items-center gap-4 p-2 rounded-lg hover:bg-muted/50">
+                <li key={proof.id} className="flex items-start gap-4 p-2 rounded-lg hover:bg-muted/50">
                   {proof.photo_url ? <img src={proof.photo_url} alt={proof.event_type} className="h-16 w-16 rounded-md object-cover" /> : <div className="h-16 w-16 rounded-md bg-secondary flex items-center justify-center text-muted-foreground"><span>Sem foto</span></div>}
                   <div className="flex-1">
                     <p className="font-semibold">{proof.event_type}</p>
                     <p className="text-sm text-muted-foreground">{proof.competitors.name}</p>
                     <p className="text-xs text-muted-foreground">{formatBrasiliaTime(proof.created_at)}</p>
+                    {proof.notes && <p className="text-xs text-muted-foreground mt-1 italic">"{proof.notes}"</p>}
                   </div>
                   <div className="flex flex-col items-end gap-2">
                     <Badge variant={proof.points > 0 ? "default" : "destructive"}>{proof.points > 0 ? `+${proof.points}` : proof.points} pts</Badge>

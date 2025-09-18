@@ -12,9 +12,9 @@ import { cn } from "@/lib/utils";
 
 // Definição dos critérios para um dia perfeito
 const PERFECT_DAY_CRITERIA = {
-  "Cada refeição perfeita": 5,
-  "Cada treino de musculação": 1,
-  "Cada cardio ≥ 20 min": 1,
+  "Refeição perfeita": 5,
+  "Treino de musculação": 1,
+  "Cardio ≥ 20 min": 1,
   "Meta diária de ingestão de água": 1,
 };
 
