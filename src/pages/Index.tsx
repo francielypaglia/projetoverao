@@ -2,6 +2,7 @@ import { Leaderboard } from "@/components/Leaderboard";
 import { ProofForm } from "@/components/ProofForm";
 import { RecentProofs } from "@/components/RecentProofs";
 import { PerfectDaysCalendar } from "@/components/PerfectDaysCalendar";
+import { WeeklyLeaderboard } from "@/components/WeeklyLeaderboard";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 
@@ -21,10 +22,13 @@ const Index = () => {
       </header>
       <main className="p-4 md:p-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Coluna Esquerda - Ranking e Calendário */}
+          {/* Coluna Esquerda - Rankings e Calendário */}
           <div className="lg:col-span-2 space-y-8">
             <section>
               <Leaderboard />
+            </section>
+            <section>
+              <WeeklyLeaderboard />
             </section>
             <section>
               <PerfectDaysCalendar />
