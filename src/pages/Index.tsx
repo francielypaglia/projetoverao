@@ -3,7 +3,6 @@ import { ProofForm } from "@/components/ProofForm";
 import { RecentProofs } from "@/components/RecentProofs";
 import { PerfectDaysCalendar } from "@/components/PerfectDaysCalendar";
 import { WeeklyLeaderboard } from "@/components/WeeklyLeaderboard";
-import { HallOfFame } from "@/components/HallOfFame";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 
@@ -28,9 +27,6 @@ const Index = () => {
           <div className="lg:col-span-2 space-y-8">
             <section>
               <WeeklyLeaderboard />
-            </section>
-            <section>
-              <HallOfFame />
             </section>
             <section>
               <PerfectDaysCalendar />
