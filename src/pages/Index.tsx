@@ -3,6 +3,7 @@ import { ProofForm } from "@/components/ProofForm";
 import { RecentProofs } from "@/components/RecentProofs";
 import { PerfectDaysCalendar } from "@/components/PerfectDaysCalendar";
 import { WeeklyLeaderboard } from "@/components/WeeklyLeaderboard";
+import { HallOfFame } from "@/components/HallOfFame";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 
@@ -25,6 +26,9 @@ const Index = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Coluna Esquerda - Destaques e Calendário */}
           <div className="lg:col-span-2 space-y-8">
+            <section>
+              <HallOfFame />
+            </section>
             <section>
               <WeeklyLeaderboard />
             </section>
