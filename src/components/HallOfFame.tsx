@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import {
   Card,
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Trophy } from "lucide-react";
+import { useEffect } from "react";
 
 interface HallOfFameEntry {
   id: string;
@@ -35,6 +36,7 @@ const fetchHallOfFame = async (): Promise<HallOfFameEntry[]> => {
 };
 
 export const HallOfFame = () => {
+  const queryClient = useQueryClient();
   const {
     data: hallOfFame,
     isLoading,
@@ -44,6 +46,30 @@ export const HallOfFame = () => {
     queryKey: ["hallOfFame"],
     queryFn: fetchHallOfFame,
   });
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('realtime-hall-of-fame')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'proofs' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['hallOfFame'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'competitors' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['hallOfFame'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   return (
     <Card>
