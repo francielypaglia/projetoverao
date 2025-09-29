@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import {
   Card,
@@ -55,7 +55,6 @@ const fetchWeeklyLeaderboard = async (
 
 export const WeeklyLeaderboard = () => {
   const [currentWeek, setCurrentWeek] = useState(new Date());
-  const queryClient = useQueryClient();
 
   const {
     data: competitors,
@@ -67,23 +66,6 @@ export const WeeklyLeaderboard = () => {
     queryFn: () => fetchWeeklyLeaderboard(currentWeek),
     staleTime: 1000 * 60 * 5, // Cache por 5 minutos
   });
-
-  useEffect(() => {
-    const channel = supabase
-      .channel('realtime-weekly-leaderboard')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'proofs' },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['weeklyLeaderboard'] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [queryClient]);
 
   const handlePreviousWeek = () => {
     setCurrentWeek((prev) => subWeeks(prev, 1));
